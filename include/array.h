@@ -12,8 +12,19 @@ public:
     Array(const Array& other)
     {
         ptr_ = new T[Size];
-        for (std::size_t i = 0; i < Size; i++)
-            ptr_[i] = other.ptr_[i];
+        std::copy(other.ptr_, other.ptr_ + Size, ptr_);
+    }
+
+    Array(std::initializer_list<T> init)
+    {
+        if (init.size() > Size)
+            throw std::length_error("Too many elements in initializer list.\n");
+
+        ptr_ = new T[Size];
+        std::copy(init.begin(), init.end(), ptr_);
+
+        for (std::size_t i = init.size(); i < Size; i++)
+            ptr_[i] = T{};
     }
 
     Array& operator=(const Array& other)
