@@ -1,4 +1,4 @@
 #! /usr/bin
 
-rm -rf build
+rm -f build/CMakeCache.txt
 cmake -S . -B build/

@@ -4,6 +4,6 @@
 
 int main()
 {
-    std::cout << "Dummy executable\n";
+    std::cout << "Basic Implemenations by Jimmy41\n";
     return 0;
 }
