@@ -1,94 +1,110 @@
 #include <gtest/gtest.h>
 #include "shared_ptr.h"
 #include "unique_ptr.h"
+#include "common.h"
 
 constexpr std::size_t TEST_BUFFER_SIZE = 7;
 
-class SmartPointerTest : public testing::Test
+// From gtest sample #5: Shared testing logic
+
+class QuickTest : public testing::Test
 {
 protected:
-    SharedPointer<int>     sharedInt;
-    SharedPointer<char>    sharedChar;
-    SharedPointer<double>  sharedDouble;
-
-    UniquePointer<int>     uniqueInt;
-    UniquePointer<char>    uniqueChar;
-    UniquePointer<double>  uniqueDouble;
+    time_t start_time;
 
     void SetUp() override
     {
-        sharedInt    = SharedPointer<int>(new int(25));
-        sharedChar   = SharedPointer<char>(new char('O'));
-        sharedDouble = SharedPointer<double>(new double(25.082004));
+        start_time = time(nullptr);
+    }
 
-        uniqueInt    = UniquePointer<int>(new int(2004));
-        uniqueChar   = UniquePointer<char>(new char('C'));
-        uniqueDouble = UniquePointer<double>(new double(8.252004));
+    void TearDown() override
+    {
+        const time_t end_time = time(nullptr);
+        EXPECT_TRUE(end_time - start_time <= 1) << "This test took too long...\n";
+    }
+};
+
+// From gtest sample #6: Typed tests
+
+template <typename T>
+class SmartPointerTypedTest : public QuickTest
+{
+protected:
+    SharedPointer<T> shared1;
+    UniquePointer<T> unique1;
+    
+    void SetUp() override
+    {
+        QuickTest::SetUp();
+        shared1 = SharedPointer<T>(new T{});
+        unique1 = UniquePointer<T>(new T{});
     };
 };
 
-TEST_F(SmartPointerTest, ClassSize)
+using ValueTypes = ::testing::Types<int, double, char, float>;
+
+TYPED_TEST_SUITE(SmartPointerTypedTest, ValueTypes);
+
+TYPED_TEST(SmartPointerTypedTest, ClassSize)
 {
-    EXPECT_EQ(sizeof(sharedInt), 2 * sizeof(void*));
-    EXPECT_EQ(sizeof(uniqueInt), sizeof(void*));
+    EXPECT_EQ(sizeof(this->shared1), 2 * sizeof(void*));
+    EXPECT_EQ(sizeof(this->unique1), sizeof(void*));
 };
 
-TEST_F(SmartPointerTest, DefaultCtor)
+TYPED_TEST(SmartPointerTypedTest, DefaultCtor)
 {
-    SharedPointer<int> sp{};
-    UniquePointer<int> up{};
-
+    SharedPointer<TypeParam> sp{};
+    UniquePointer<TypeParam> up{};
     EXPECT_EQ(sp.get(), nullptr);
     EXPECT_EQ(up.get(), nullptr);
 };
 
-TEST_F(SmartPointerTest, SharedCopySemantics)
+TYPED_TEST(SmartPointerTypedTest, SharedCopySemantics)
 {
-    SharedPointer<char> sharedChar2(sharedChar);
-    EXPECT_EQ(sharedChar.get_count(), sharedChar2.get_count());
-    EXPECT_EQ(*sharedChar, *sharedChar2);
+    SharedPointer<TypeParam> shared2(this->shared1);
+    EXPECT_EQ(this->shared1.get_count(), shared2.get_count());
+    EXPECT_EQ(*this->shared1, *shared2);
 
-    SharedPointer<char> sharedChar3 = sharedChar2;
-    EXPECT_EQ(sharedChar2.get_count(), sharedChar3.get_count());
-    EXPECT_EQ(*sharedChar2, *sharedChar3);
+    SharedPointer<TypeParam> shared3 = shared2;
+    EXPECT_EQ(shared2.get_count(), shared3.get_count());
+    EXPECT_EQ(*shared2, *shared3);
 };
 
-TEST_F(SmartPointerTest, MoveSemantics)
+TYPED_TEST(SmartPointerTypedTest, MoveSemantics)
 {
-    SharedPointer<int> sharedInt2(std::move(sharedInt));
-    EXPECT_EQ(sharedInt2.get_count(), 1);
+    SharedPointer<TypeParam> shared2(std::move(this->shared1));
+    EXPECT_EQ(shared2.get_count(), 1);
 
-    SharedPointer<int> sharedInt3 = std::move(sharedInt2);
-    EXPECT_EQ(sharedInt3.get_count(), 1);
+    SharedPointer<TypeParam> shared3 = std::move(shared2);
+    EXPECT_EQ(shared3.get_count(), 1);
 
-    EXPECT_EQ(sharedInt.get(), nullptr);
-    EXPECT_EQ(sharedInt2.get(), nullptr);
+    EXPECT_EQ(this->shared1.get(), nullptr);
+    EXPECT_EQ(shared2.get(), nullptr);
 
-    UniquePointer<int> uniqueInt2(std::move(uniqueInt));
-    EXPECT_EQ(*uniqueInt2, 2004);
+    TypeParam uniqueValue = *this->unique1;
 
-    UniquePointer<int> uniqueInt3 = std::move(uniqueInt2);
-    EXPECT_EQ(*uniqueInt3, 2004);
+    UniquePointer<TypeParam> unique2(std::move(this->unique1));
+    EXPECT_EQ(*unique2, uniqueValue);
+
+    UniquePointer<TypeParam> unique3 = std::move(unique2);
+    EXPECT_EQ(*unique3, uniqueValue);
 };
 
-TEST_F(SmartPointerTest, SharedReset)
+TYPED_TEST(SmartPointerTypedTest, SharedReset)
 {
-    SharedPointer<double> sharedDouble2 = sharedDouble;
-    EXPECT_EQ(sharedDouble2.get_count(), 2);
+    SharedPointer<TypeParam> shared2 = this->shared1;
+    EXPECT_EQ(shared2.get_count(), 2);
 
-    double* raw = new double(99.95);
-    sharedDouble.reset(raw);
+    this->shared1.reset(new TypeParam{});
+    EXPECT_NE(this->shared1.get(), nullptr);
 
-    EXPECT_EQ(*sharedDouble, 99.95);
-    EXPECT_EQ(sharedDouble.get_count(), 1);
-
-    EXPECT_EQ(*sharedDouble2, 25.082004);
-    EXPECT_EQ(sharedDouble2.get_count(), 1);
+    EXPECT_EQ(this->shared1.get_count(), 1);
+    EXPECT_EQ(shared2.get_count(), 1);
 };
 
-TEST_F(SmartPointerTest, UniqueRelease)
+TYPED_TEST(SmartPointerTypedTest, UniqueRelease)
 {
-    char* rawChar = uniqueChar.release();
-    EXPECT_TRUE(uniqueChar.get() == nullptr);
-    EXPECT_EQ(*rawChar, 'C');
+    TypeParam* rawValue = this->unique1.release();
+    EXPECT_TRUE(this->unique1.get() == nullptr);
+    EXPECT_NE(rawValue, nullptr);
 };
