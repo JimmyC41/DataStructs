@@ -1,3 +1,4 @@
+#pragma once
 #include "common.h"
 
 struct ControlBlock
@@ -45,7 +46,7 @@ public:
         if (this != &other)
         {
             TryRelease();
-            MoveFrom(other);
+            MoveFrom(std::move(other));
         }
         return *this;
     }
@@ -67,6 +68,8 @@ public:
 
     size_t get_count() const
     {
+        if (!controlBlock_ || !ptr_)
+            return 0;
         std::scoped_lock lock{controlBlock_->mutex_};
         return controlBlock_->refCount_;
     }
@@ -80,7 +83,7 @@ private:
     // Sets the raw pointer and allocates control block
     void Initialize(T* rawPointer)
     {
-        std::cout << "New shared pointer initialized!\n";
+        // std::cout << "New shared pointer initialized!\n";
         ptr_ = rawPointer;
         controlBlock_ = new ControlBlock{1};
     }
@@ -88,7 +91,7 @@ private:
     // Points to the same resource and control block
     void CopyFrom(const SharedPointer& other) noexcept
     {
-        std::cout << "Existing shared pointer copied!\n";
+        // std::cout << "Existing shared pointer copied!\n";
         ptr_ = other.ptr_;
         controlBlock_ = other.controlBlock_;
 
@@ -98,14 +101,14 @@ private:
         {
             std::scoped_lock lock{controlBlock_->mutex_};
             controlBlock_->refCount_++;
-            std::cout << std::format("refCount: {}\n", controlBlock_->refCount_);
+            // std::cout << std::format("refCount: {}\n", controlBlock_->refCount_);
         }
     }
 
     // Transfer ownership resource and control block
     void MoveFrom(SharedPointer&& other) noexcept
     {
-        std::cout << "Ownership of shared pointer moved!\n";
+        // std::cout << "Ownership of shared pointer moved!\n";
         ptr_ = std::exchange(other.ptr_, nullptr);
         controlBlock_ = std::exchange(other.controlBlock_, nullptr);
     }
@@ -123,7 +126,7 @@ private:
                 return;
         }
 
-        std::cout << "refCount reached 0. Destroying now...";
+        // std::cout << "refCount reached 0. Destroying now...";
 
         // controlBlock_ is not null and refCount_ = 0:
         delete ptr_;

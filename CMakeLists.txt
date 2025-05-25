@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 project(DataStructs)
 
-add_subdirectory(src)
+# add_subdirectory(src)
 
 add_executable(dummy main.cpp)
 
@@ -14,7 +14,7 @@ target_include_directories(dummy
 
 target_link_libraries(dummy
     PRIVATE
-        DataStructLib
+        # DataStructLib
 )
 
 add_subdirectory(test)

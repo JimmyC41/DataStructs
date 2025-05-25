@@ -1,3 +1,4 @@
+#pragma once
 #include "common.h"
 
 template <typename T>
@@ -5,7 +6,7 @@ struct CustomDeleter
 {
     void operator()(T* ptr) const
     {
-        std::cout << "Deleting resource!\n";
+        // std::cout << "Deleting resource!\n";
         delete ptr;
     }
 };
@@ -23,7 +24,7 @@ public:
 
     UniquePointer(UniquePointer&& other) noexcept : UniquePointer(nullptr)
     {
-        std::cout << "Move constructor called.\n";
+        // std::cout << "Move constructor called.\n";
         MoveFrom(std::move(other));
     }
 
@@ -31,7 +32,7 @@ public:
 
     UniquePointer& operator=(UniquePointer&& other) noexcept
     {
-        std::cout << "Move operator= called.\n";
+        // std::cout << "Move operator= called.\n";
         if (this != &other)
         {
             Reset();
@@ -42,7 +43,7 @@ public:
 
     ~UniquePointer() noexcept
     {
-        std::cout << "Destructor called.\n";
+        // std::cout << "Destructor called.\n";
         Reset();
     }
     

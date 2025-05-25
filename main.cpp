@@ -1,6 +1,6 @@
 #include <iostream>
-#include "unique_ptr.cpp"
-#include "shared_ptr.cpp"
+#include "unique_ptr.h"
+#include "shared_ptr.h"
 
 int main()
 {
